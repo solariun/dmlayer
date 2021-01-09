@@ -135,7 +135,7 @@ int main ()
 
     assert (CorePartition_SetStackOverflowHandler (StackOverflowHandler));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 0));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 5));
 
     assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 300));
 
@@ -153,7 +153,7 @@ int main ()
 
     assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 60000));
 
-    assert (CorePartition_CreateThread (Thread_Consumer, NULL, 500, 200));
+    assert (CorePartition_CreateThread (Thread_Consumer, NULL, 500, 1000));
     
     
     CorePartition_Join ();
