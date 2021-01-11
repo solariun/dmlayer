@@ -51,6 +51,7 @@ extern "C"
 #define YYTRACE NOTRACE
 #define TRACE YYTRACE
 
+
 #endif
 
 
@@ -89,6 +90,7 @@ typedef struct ObsVariable ObsVariable;
 typedef struct
 {
     bool enable;
+    void* pUserData;
     ObsVariable* pObsVariables;
 } DMLayer;
 
@@ -101,9 +103,17 @@ typedef void (*obs_callback_func)(DMLayer*, const char*, size_t, size_t, uint8_t
 
 /**
  * @brief External Yield function interface
+ *
+ * @note Those must be implemented to compile
  */
 extern void DMLayer_YieldContext(void);
 
+extern bool DMLayer_LockInit(DMLayer* pDMLayer);
+extern bool DMLayer_Lock(DMLayer* pDMLayer);
+extern bool DMLayer_SharedLock(DMLayer* pDMLayer);
+extern bool DMLayer_Unlock(DMLayer* pDMLayer);
+extern bool DMLayer_SharedUnlock(DMLayer* pDMLayer);
+extern bool DMLayer_LockEnd(DMLayer* pDMLayer);
 /**
  * @brief Create API instance
  *
@@ -301,8 +311,9 @@ dmlnumber DMLayer_GetNumber (DMLayer* pDMLayer, const char* pszVariableName, siz
  */
 bool DMLayer_SetNumber (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize, size_t nUserType, dmlnumber nValue);
 
+bool DMLayer_SetUserData (DMLayer* pDMLayer, void* pUserData);
 
-
+void* DMLayer_GetUserData (DMLayer* pDMLayer);
 
 #ifdef __cplusplus
 }

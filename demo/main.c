@@ -101,6 +101,112 @@ void Thread_Consumer (void* pValue)
     }
 }
 
+void DMLayer_YieldContext ()
+{
+    CorePartition_Yield ();
+}
+
+int nLockCount = 0;
+
+bool DMLayer_LockInit(DMLayer* pDMLayer)
+{
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+    
+    CpxSmartLock* pLock = malloc (sizeof (pLock));
+    
+    CorePartition_LockInit(pLock);
+    
+    DMLayer_SetUserData(pDMLayer, (void*) pLock);
+    
+    nLockCount = 0;
+    
+    return true;
+}
+
+bool DMLayer_Lock(DMLayer* pDMLayer)
+{
+    CpxSmartLock* pLock = NULL;
+    
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
+
+    TRACE ("%s: ", __FUNCTION__);
+    
+    VERIFY (CorePartition_Lock(pLock), "Failed acquire exclusive lock", false);
+    
+    nLockCount++;
+    TRACE (" Lock: [%u]\n", nLockCount);
+    
+    return true;
+}
+
+bool DMLayer_SharedLock(DMLayer* pDMLayer)
+{
+    CpxSmartLock* pLock = NULL;
+    
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
+
+    TRACE ("%s: ", __FUNCTION__);
+    
+    VERIFY (CorePartition_SharedLock(pLock), "Failed acquire shared lock", false);
+
+    nLockCount++;
+    TRACE (" Lock: [%u]\n", nLockCount);
+
+    return true;
+}
+
+bool DMLayer_Unlock(DMLayer* pDMLayer)
+{
+    CpxSmartLock* pLock = NULL;
+    
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
+    
+    TRACE ("%s: ", __FUNCTION__);
+    
+    VERIFY (CorePartition_Unlock(pLock), "Failed unlock", false);
+
+    nLockCount--;
+    TRACE (" Lock: [%u]\n", nLockCount);
+
+    return true;
+}
+
+bool DMLayer_LockEnd(DMLayer* pDMLayer)
+{
+    CpxSmartLock* pLock = NULL;
+    
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
+
+    VERIFY (CorePartition_Lock(pLock), "Failed acquire exclusive lock", false);
+    
+    free (pLock);
+    
+    DMLayer_SetUserData(pDMLayer, NULL);
+    
+    return true;
+}
+
+bool DMLayer_SharedUnlock(DMLayer* pDMLayer)
+{
+    CpxSmartLock* pLock = NULL;
+    
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
+    
+    TRACE ("%s: ", __FUNCTION__);
+    
+    VERIFY (CorePartition_SharedUnlock(pLock), "Failed unlock", false);
+
+    nLockCount--;
+    TRACE (" Lock: [%u]\n", nLockCount);
+
+    return true;
+}
+
 void CorePartition_SleepTicks (uint32_t nSleepTime)
 {
     usleep ((useconds_t)nSleepTime * 1000);
@@ -117,11 +223,7 @@ uint32_t CorePartition_GetCurrentTick (void)
 static void StackOverflowHandler ()
 {
     printf ("Error, Thread#%zu Stack %zu / %zu max\n", CorePartition_GetID (), CorePartition_GetStackSize (), CorePartition_GetMaxStackSize ());
-}
-
-void DMLayer_YieldContext ()
-{
-    CorePartition_Yield ();
+    exit (1);
 }
 
 int main ()
@@ -135,25 +237,25 @@ int main ()
 
     assert (CorePartition_SetStackOverflowHandler (StackOverflowHandler));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 5));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 5));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 300));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 300));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 300));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 300));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 500));
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 500));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 500));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 500));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 50));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 50));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 800));
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 800));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 800));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 800));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 1000));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 1000));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 500, 60000));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 60000));
 
-    assert (CorePartition_CreateThread (Thread_Consumer, NULL, 500, 1000));
+    assert (CorePartition_CreateThread (Thread_Consumer, NULL, 600, 1000));
     
     
     CorePartition_Join ();

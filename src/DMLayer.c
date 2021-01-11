@@ -227,6 +227,8 @@ DMLayer* DMLayer_CreateInstance ()
     pDMLayer->enable = true;
     pDMLayer->pObsVariables = NULL;
 
+    VERIFY (DMLayer_LockInit(pDMLayer), "Error initiating lock.", NULL);
+    
     return pDMLayer;
 }
 
@@ -714,4 +716,20 @@ bool DMLayer_GetBinary (DMLayer* pDMLayer, const char* pszVariableName, size_t n
     }
 
     return false;
+}
+
+bool DMLayer_SetUserData (DMLayer* pDMLayer, void* pUserData)
+{
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+    
+    pDMLayer->pUserData = pUserData;
+    
+    return true;
+}
+
+void* DMLayer_GetUserData (DMLayer* pDMLayer)
+{
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+    
+    return pDMLayer->pUserData;
 }
