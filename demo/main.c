@@ -23,7 +23,7 @@
 #include <stdbool.h>
 #endif
 
-#include "../CorePartition/CorePartition.h"
+#include "CorePartition.h"
 
 #include "DMLayer.h"
 
@@ -106,19 +106,17 @@ void DMLayer_YieldContext ()
     CorePartition_Yield ();
 }
 
-int nLockCount = 0;
-
 bool DMLayer_LockInit(DMLayer* pDMLayer)
 {
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+ 
+    YYTRACE ("Starting up Lock.. \n");
     
     CpxSmartLock* pLock = malloc (sizeof (pLock));
     
     CorePartition_LockInit(pLock);
     
     DMLayer_SetUserData(pDMLayer, (void*) pLock);
-    
-    nLockCount = 0;
     
     return true;
 }
@@ -130,12 +128,11 @@ bool DMLayer_Lock(DMLayer* pDMLayer)
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
     VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
 
-    TRACE ("%s: ", __FUNCTION__);
+    YYTRACE ("%s: ", __FUNCTION__);
     
     VERIFY (CorePartition_Lock(pLock), "Failed acquire exclusive lock", false);
     
-    nLockCount++;
-    TRACE (" Lock: [%u]\n", nLockCount);
+    YYTRACE (" Lock: [%u]\n", pLock->bExclusiveLock);
     
     return true;
 }
@@ -147,12 +144,11 @@ bool DMLayer_SharedLock(DMLayer* pDMLayer)
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
     VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
 
-    TRACE ("%s: ", __FUNCTION__);
+    YYTRACE ("%s: ", __FUNCTION__);
     
     VERIFY (CorePartition_SharedLock(pLock), "Failed acquire shared lock", false);
 
-    nLockCount++;
-    TRACE (" Lock: [%u]\n", nLockCount);
+    YYTRACE (" Lock: [%zu]\n", pLock->bSharedLock);
 
     return true;
 }
@@ -164,12 +160,26 @@ bool DMLayer_Unlock(DMLayer* pDMLayer)
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
     VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
     
-    TRACE ("%s: ", __FUNCTION__);
-    
+    YYTRACE ("%s: ", __FUNCTION__);
+    YYTRACE (" Lock: [%u]\n", pLock->bExclusiveLock);
+
     VERIFY (CorePartition_Unlock(pLock), "Failed unlock", false);
 
-    nLockCount--;
-    TRACE (" Lock: [%u]\n", nLockCount);
+
+    return true;
+}
+
+bool DMLayer_SharedUnlock(DMLayer* pDMLayer)
+{
+    CpxSmartLock* pLock = NULL;
+    
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
+    
+    YYTRACE ("%s: ", __FUNCTION__);
+    YYTRACE (" Lock: [%u]\n", pLock->bSharedLock);
+    
+    VERIFY (CorePartition_SharedUnlock(pLock), "Failed to unlock", false);
 
     return true;
 }
@@ -190,22 +200,7 @@ bool DMLayer_LockEnd(DMLayer* pDMLayer)
     return true;
 }
 
-bool DMLayer_SharedUnlock(DMLayer* pDMLayer)
-{
-    CpxSmartLock* pLock = NULL;
-    
-    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
-    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
-    
-    TRACE ("%s: ", __FUNCTION__);
-    
-    VERIFY (CorePartition_SharedUnlock(pLock), "Failed unlock", false);
-
-    nLockCount--;
-    TRACE (" Lock: [%u]\n", nLockCount);
-
-    return true;
-}
+#if 0
 
 void CorePartition_SleepTicks (uint32_t nSleepTime)
 {
@@ -237,7 +232,7 @@ int main ()
 
     assert (CorePartition_SetStackOverflowHandler (StackOverflowHandler));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 5));
+    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 1));
 
     assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 300));
 
@@ -264,3 +259,5 @@ int main ()
     
     return 0;
 }
+
+#endif

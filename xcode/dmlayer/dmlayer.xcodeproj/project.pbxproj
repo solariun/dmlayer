@@ -7,9 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0E02603F25AD37F900C3D689 /* LockExample.c in Sources */ = {isa = PBXBuildFile; fileRef = 0E02603B25AD356300C3D689 /* LockExample.c */; };
+		0E02604125AD380000C3D689 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 0E02603D25AD359D00C3D689 /* main.c */; };
 		6700E6EE25AA34B5006A7700 /* CorePartition.c in Sources */ = {isa = PBXBuildFile; fileRef = 6700E6ED25AA34B5006A7700 /* CorePartition.c */; };
 		6700E6F125AA34C1006A7700 /* DMLayer.c in Sources */ = {isa = PBXBuildFile; fileRef = 6700E6EF25AA34C1006A7700 /* DMLayer.c */; };
-		6700E6F925AB33AD006A7700 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 6700E6F825AB33AD006A7700 /* main.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +26,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0E02603B25AD356300C3D689 /* LockExample.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = LockExample.c; path = ../../CorePartition/PCExample/LockExample/LockExample.c; sourceTree = "<group>"; };
+		0E02603D25AD359D00C3D689 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = main.c; path = ../../demo/main.c; sourceTree = "<group>"; };
 		0E9FDDF825A3817A0054BE8A /* dmlayer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dmlayer; sourceTree = BUILT_PRODUCTS_DIR; };
 		6700E6EC25AA34B5006A7700 /* CorePartition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CorePartition.h; path = ../../CorePartition/CorePartition.h; sourceTree = "<group>"; };
 		6700E6ED25AA34B5006A7700 /* CorePartition.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = CorePartition.c; path = ../../CorePartition/CorePartition.c; sourceTree = "<group>"; };
@@ -32,7 +35,6 @@
 		6700E6F025AA34C1006A7700 /* DMLayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DMLayer.h; path = ../../src/DMLayer.h; sourceTree = "<group>"; };
 		6700E6F425AA34E3006A7700 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = LICENSE; path = ../../LICENSE; sourceTree = "<group>"; };
 		6700E6F525AA34E3006A7700 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../../README.md; sourceTree = "<group>"; };
-		6700E6F825AB33AD006A7700 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = ../../demo/main.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,12 +51,13 @@
 		0E9FDDEF25A3817A0054BE8A = {
 			isa = PBXGroup;
 			children = (
-				6700E6F825AB33AD006A7700 /* main.c */,
+				0E02603B25AD356300C3D689 /* LockExample.c */,
 				6700E6F425AA34E3006A7700 /* LICENSE */,
 				6700E6F525AA34E3006A7700 /* README.md */,
 				6700E6EF25AA34C1006A7700 /* DMLayer.c */,
 				6700E6F025AA34C1006A7700 /* DMLayer.h */,
 				6700E6ED25AA34B5006A7700 /* CorePartition.c */,
+				0E02603D25AD359D00C3D689 /* main.c */,
 				6700E6EC25AA34B5006A7700 /* CorePartition.h */,
 				0E9FDDF925A3817A0054BE8A /* Products */,
 			);
@@ -124,9 +127,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6700E6F925AB33AD006A7700 /* main.c in Sources */,
+				0E02604125AD380000C3D689 /* main.c in Sources */,
 				6700E6F125AA34C1006A7700 /* DMLayer.c in Sources */,
 				6700E6EE25AA34B5006A7700 /* CorePartition.c in Sources */,
+				0E02603F25AD37F900C3D689 /* LockExample.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

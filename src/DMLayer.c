@@ -21,6 +21,17 @@
 
 #include "DMLayer.h"
 
+#ifdef __DEBUG__
+#define UNLOCK_VERIFY(term,message,ret) if (!(term)){fprintf (stderr, "OBSVAR(ULK):%s[%u](%s):ERROR:[%s]\n", __FUNCTION__, __LINE__, #term, (message [0] == '\0' ? strerror (errno) : message)); DMLayer_Unlock (pDMLayer); return ret;}
+#define SUNLOCK_VERIFY(term,message,ret) if (!(term)){fprintf (stderr, "OBSVAR(SULK):%s[%u](%s):ERROR:[%s]\n", __FUNCTION__, __LINE__, #term, (message [0] == '\0' ? strerror (errno) : message)); DMLayer_SharedUnlock (pDMLayer); return ret;}
+
+#else
+
+#define UNLOCK_VERIFY(term,message,ret) if (!(term)){DMLayer_Unlock (pDMLayer); return ret;}
+#define SUNLOCK_VERIFY(term,message,ret) if (!(term)){DMLayer_SharedUnlock (pDMLayer); return ret;}
+
+#endif
+
 struct Observable
 {
     bool bEnable;
@@ -150,7 +161,30 @@ static bool DMLayer_ResetVariable (ObsVariable* pVariable, bool nCleanBin, bool 
     return true;
 }
 
-ObsVariable* DMLayer_CreateVariable (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize)
+
+static ObsVariable* DMLayer_GetVariable (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize)
+{
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", NULL);
+    VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", NULL);
+    VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", NULL);
+
+    {
+        uint32_t nTargetID = DMLayer_GetVariableID (pszVariableName, nVariableSize);
+        ObsVariable* pVariable = pDMLayer->pObsVariables;
+        while (pVariable != NULL)
+        {
+            if (pVariable->nVariableID == nTargetID)
+            {
+                return pVariable;
+            }
+            pVariable = pVariable->pPrev;
+        }
+    }
+
+    return NULL;
+}
+
+static ObsVariable* DMLayer_CreateVariable (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize)
 {
     ObsVariable* pVariable;
 
@@ -178,7 +212,9 @@ void DMLayer_PrintVariables (DMLayer* pDMLayer)
 {
     size_t nCount = 0;
 
-    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", );
+    VERIFY (DMLayer_SharedLock(pDMLayer), "Error acquiring shared lock.", );
+    
+    SUNLOCK_VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", );
 
     {
         ObsVariable* pVariable = pDMLayer->pObsVariables;
@@ -194,28 +230,8 @@ void DMLayer_PrintVariables (DMLayer* pDMLayer)
 
         TRACE ("--------------------------------------------------\n");
     }
-}
-
-ObsVariable* DMLayer_GetVariable (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize)
-{
-    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", NULL);
-    VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", NULL);
-    VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", NULL);
-
-    {
-        uint32_t nTargetID = DMLayer_GetVariableID (pszVariableName, nVariableSize);
-        ObsVariable* pVariable = pDMLayer->pObsVariables;
-        while (pVariable != NULL)
-        {
-            if (pVariable->nVariableID == nTargetID)
-            {
-                return pVariable;
-            }
-            pVariable = pVariable->pPrev;
-        }
-    }
-
-    return NULL;
+    
+    VERIFY (DMLayer_SharedUnlock(pDMLayer), "Error unlocking shared lock.", );
 }
 
 DMLayer* DMLayer_CreateInstance ()

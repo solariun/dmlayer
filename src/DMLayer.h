@@ -51,7 +51,6 @@ extern "C"
 #define YYTRACE NOTRACE
 #define TRACE YYTRACE
 
-
 #endif
 
 
@@ -130,27 +129,27 @@ DMLayer* DMLayer_CreateInstance(void);
  */
 bool DMLayer_ReleaseInstance (DMLayer* pDMLayer);
 
-/**
- * @brief Create a new empty variable
- *
- * @param pDMLayer     DMLayer structure pointer
- * @param pszVariableName  C String variable name pointer
- * @param nVariableSize Size of the provided variable name
- *
- * @returns *ObsVariable pointer for new stored variable, on Error return NULL
- */
-ObsVariable* DMLayer_CreateVariable (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize);
+///**
+// * @brief Create a new empty variable
+// *
+// * @param pDMLayer     DMLayer structure pointer
+// * @param pszVariableName  C String variable name pointer
+// * @param nVariableSize Size of the provided variable name
+// *
+// * @returns *ObsVariable pointer for new stored variable, on Error return NULL
+// */
+//ObsVariable* DMLayer_CreateVariable (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize);
 
-/**
- * @brief Find and return a stored variable pointer
- *
- * @param pDMLayer  DMLayer structure pointer
- * @param pszVariableName  C String variable name pointer
- * @param nVariableSize  Size of the provided variable name
- *
- * @returns return the pointer of a found variable, on error return NULL.
- */
-ObsVariable* DMLayer_GetVariable (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize);
+///**
+// * @brief Find and return a stored variable pointer
+// *
+// * @param pDMLayer  DMLayer structure pointer
+// * @param pszVariableName  C String variable name pointer
+// * @param nVariableSize  Size of the provided variable name
+// *
+// * @returns return the pointer of a found variable, on error return NULL.
+// */
+//ObsVariable* DMLayer_GetVariable (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize);
 
 /**
  * @brief Prints all Variable name found
@@ -254,7 +253,7 @@ size_t DMLayer_GetVariableBinarySize (DMLayer* pDMLayer, const char* pszVariable
  * @param pszVariableName   C string of a variable name pointer
  * @param nVariableSize Size of the provided variable name
  *
- * @returns return false in case of a error or the variable does not exist.
+ * @returns return false in case of an error or the variable does not exist.
  */
 uint8_t DMLayer_GetVariableType (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize);
 
