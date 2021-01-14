@@ -148,7 +148,7 @@ bool DMLayer_SharedLock(DMLayer* pDMLayer)
     
     VERIFY (CorePartition_SharedLock(pLock), "Failed acquire shared lock", false);
 
-    YYTRACE (" Lock: [%zu]\n", pLock->bSharedLock);
+    YYTRACE (" Lock: [%zu]\n", pLock->nSharedLockCount);
 
     return true;
 }
@@ -177,7 +177,7 @@ bool DMLayer_SharedUnlock(DMLayer* pDMLayer)
     VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
     
     YYTRACE ("%s: ", __FUNCTION__);
-    YYTRACE (" Lock: [%u]\n", pLock->bSharedLock);
+    YYTRACE (" Lock: [%zu]\n", pLock->nSharedLockCount);
     
     VERIFY (CorePartition_SharedUnlock(pLock), "Failed to unlock", false);
 
