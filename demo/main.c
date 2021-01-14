@@ -43,11 +43,11 @@ void Thread_Producer (void* pValue)
         
         nRand ++; 
         
-        nResponse =  DMLayer_SetNumber (pDMLayer, pszProducer, strlen (pszProducer), CorePartition_GetID (), (dmlnumber) nRand);
+        nResponse =  DMLayer_SetNumber (pDMLayer, pszProducer, strlen (pszProducer), Cpx_GetID (), (dmlnumber) nRand);
         
-        NOTRACE ("[%s (%zu)]: func: (%u), nRand: [%u]\n", __FUNCTION__, CorePartition_GetID(), nResponse, nRand);
+        NOTRACE ("[%s (%zu)]: func: (%u), nRand: [%u]\n", __FUNCTION__, Cpx_GetID(), nResponse, nRand);
 
-        CorePartition_Yield ();
+        Cpx_Yield ();
     }
 }
 
@@ -65,7 +65,7 @@ void Consumer_Callback_Notify (DMLayer* pDMLayer, const char* pszVariable, size_
     
     NOTRACE ("->[%s]: from: [%zu], Type: [%u] -> Value: [%u]\n", __FUNCTION__, nUserType, nNotifyType, nValues[nUserType]);
 
-    DMLayer_SetBinary (pDMLayer, pszBinConsumer, strlen (pszBinConsumer), (size_t)CorePartition_GetID (), (void*)nValues, sizeof (nValues));
+    DMLayer_SetBinary (pDMLayer, pszBinConsumer, strlen (pszBinConsumer), (size_t)Cpx_GetID (), (void*)nValues, sizeof (nValues));
 }
 
 void Thread_Consumer (void* pValue)
@@ -76,7 +76,7 @@ void Thread_Consumer (void* pValue)
     int nCount = 0;
     size_t nUserType = 0;
 
-    while (DMLayer_ObserveVariable (pDMLayer, pszBinConsumer, strlen (pszBinConsumer), &nUserType) || CorePartition_Yield ())
+    while (DMLayer_ObserveVariable (pDMLayer, pszBinConsumer, strlen (pszBinConsumer), &nUserType) || Cpx_Yield ())
     {
         NOTRACE ("[%s] From: [%zu] -> type: [%u - bin: %u], size: [%zu]\n",
                 __FUNCTION__,
@@ -103,7 +103,7 @@ void Thread_Consumer (void* pValue)
 
 void DMLayer_YieldContext ()
 {
-    CorePartition_Yield ();
+    Cpx_Yield ();
 }
 
 bool DMLayer_LockInit(DMLayer* pDMLayer)
@@ -114,7 +114,7 @@ bool DMLayer_LockInit(DMLayer* pDMLayer)
     
     CpxSmartLock* pLock = malloc (sizeof (pLock));
     
-    CorePartition_LockInit(pLock);
+    Cpx_LockInit(pLock);
     
     DMLayer_SetUserData(pDMLayer, (void*) pLock);
     
@@ -130,7 +130,7 @@ bool DMLayer_Lock(DMLayer* pDMLayer)
 
     YYTRACE ("%s: ", __FUNCTION__);
     
-    VERIFY (CorePartition_Lock(pLock), "Failed acquire exclusive lock", false);
+    VERIFY (Cpx_Lock(pLock), "Failed acquire exclusive lock", false);
     
     YYTRACE (" Lock: [%u]\n", pLock->bExclusiveLock);
     
@@ -146,7 +146,7 @@ bool DMLayer_SharedLock(DMLayer* pDMLayer)
 
     YYTRACE ("%s: ", __FUNCTION__);
     
-    VERIFY (CorePartition_SharedLock(pLock), "Failed acquire shared lock", false);
+    VERIFY (Cpx_SharedLock(pLock), "Failed acquire shared lock", false);
 
     YYTRACE (" Lock: [%zu]\n", pLock->nSharedLockCount);
 
@@ -163,7 +163,7 @@ bool DMLayer_Unlock(DMLayer* pDMLayer)
     YYTRACE ("%s: ", __FUNCTION__);
     YYTRACE (" Lock: [%u]\n", pLock->bExclusiveLock);
 
-    VERIFY (CorePartition_Unlock(pLock), "Failed unlock", false);
+    VERIFY (Cpx_Unlock(pLock), "Failed unlock", false);
 
 
     return true;
@@ -179,7 +179,7 @@ bool DMLayer_SharedUnlock(DMLayer* pDMLayer)
     YYTRACE ("%s: ", __FUNCTION__);
     YYTRACE (" Lock: [%zu]\n", pLock->nSharedLockCount);
     
-    VERIFY (CorePartition_SharedUnlock(pLock), "Failed to unlock", false);
+    VERIFY (Cpx_SharedUnlock(pLock), "Failed to unlock", false);
 
     return true;
 }
@@ -191,7 +191,7 @@ bool DMLayer_LockEnd(DMLayer* pDMLayer)
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
     VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
 
-    VERIFY (CorePartition_Lock(pLock), "Failed acquire exclusive lock", false);
+    VERIFY (Cpx_Lock(pLock), "Failed acquire exclusive lock", false);
     
     free (pLock);
     
@@ -202,12 +202,12 @@ bool DMLayer_LockEnd(DMLayer* pDMLayer)
 
 #if 0
 
-void CorePartition_SleepTicks (uint32_t nSleepTime)
+void Cpx_SleepTicks (uint32_t nSleepTime)
 {
     usleep ((useconds_t)nSleepTime * 1000);
 }
 
-uint32_t CorePartition_GetCurrentTick (void)
+uint32_t Cpx_GetCurrentTick (void)
 {
     struct timeval tp;
     gettimeofday (&tp, NULL);
@@ -217,7 +217,7 @@ uint32_t CorePartition_GetCurrentTick (void)
 
 static void StackOverflowHandler ()
 {
-    printf ("Error, Thread#%zu Stack %zu / %zu max\n", CorePartition_GetID (), CorePartition_GetStackSize (), CorePartition_GetMaxStackSize ());
+    printf ("Error, Thread#%zu Stack %zu / %zu max\n", Cpx_GetID (), Cpx_GetStackSize (), Cpx_GetMaxStackSize ());
     exit (1);
 }
 
@@ -228,32 +228,32 @@ int main ()
 
     VERIFY ((pDMLayer = DMLayer_CreateInstance ()) != NULL, "Error creating DMLayer instance", 1);
 
-    assert (CorePartition_Start (20));
+    assert (Cpx_Start (20));
 
-    assert (CorePartition_SetStackOverflowHandler (StackOverflowHandler));
+    assert (Cpx_SetStackOverflowHandler (StackOverflowHandler));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 1));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 1));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 300));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 300));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 300));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 300));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 500));
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 500));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 500));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 500));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 50));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 50));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 800));
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 800));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 800));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 800));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 1000));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 1000));
 
-    assert (CorePartition_CreateThread (Thread_Producer, NULL, 600, 60000));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 60000));
 
-    assert (CorePartition_CreateThread (Thread_Consumer, NULL, 600, 1000));
+    assert (Cpx_CreateThread (Thread_Consumer, NULL, 600, 1000));
     
     
-    CorePartition_Join ();
+    Cpx_Join ();
     
     DMLayer_ReleaseInstance(pDMLayer);
     
