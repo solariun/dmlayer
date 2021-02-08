@@ -127,54 +127,54 @@ bool DMLayer_LockInit (DMLayer* pDMLayer)
 {
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
 
-    // ReadWriteLock_t* wrlock = CreateReadWriteLockPreferWriter ();
+    ReadWriteLock_t* wrlock = CreateReadWriteLockPreferWriter ();
 
-    // DMLayer_SetUserData (pDMLayer, (void*)wrlock);
+    DMLayer_SetUserData (pDMLayer, (void*)wrlock);
 
     return true;
 }
 
 bool DMLayer_Lock (DMLayer* pDMLayer)
 {
-    // ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
+    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
 
-    // ::WriterLock (wrlock);
+    ::WriterLock (wrlock);
 
     return true;
 }
 
 bool DMLayer_SharedLock (DMLayer* pDMLayer)
 {
-    // ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
+    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
 
-    // ReaderLock ((ReadWriteLock_t*) wrlock);
+    ReaderLock ((ReadWriteLock_t*) wrlock);
 
     return true;
 }
 
 bool DMLayer_Unlock (DMLayer* pDMLayer)
 {
-    // ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
+    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
 
-    // ::WriterUnlock (wrlock);
+    ::WriterUnlock (wrlock);
 
     return true;
 }
 
 bool DMLayer_SharedUnlock (DMLayer* pDMLayer)
 {
-    // ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
+    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
 
-    // ReaderUnlock ((ReadWriteLock_t*) wrlock);
+    ReaderUnlock ((ReadWriteLock_t*) wrlock);
 
     return true;
 }
 
 bool DMLayer_LockEnd (DMLayer* pDMLayer)
 {
-    // ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
+    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
 
-    // ::FreeReadWriteLock (wrlock);
+    ::FreeReadWriteLock (wrlock);
 
     return true;
 }
@@ -217,7 +217,7 @@ void setup ()
     xTaskCreate(Thread_Producer,"Producer2", configMINIMAL_STACK_SIZE * 2, (void*) 250, tskIDLE_PRIORITY + 3, NULL);
 
     delay (100);
-    
+
     xTaskCreate (Thread_Consumer, "Consumer1", configMINIMAL_STACK_SIZE * 4, NULL, tskIDLE_PRIORITY + 10, NULL);
 
     vTaskStartScheduler ();
