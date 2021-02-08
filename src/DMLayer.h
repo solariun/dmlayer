@@ -42,7 +42,7 @@ extern "C"
 #ifdef __DEBUG__
 #define VERIFY(term,message,ret) if (!(term)){fprintf (stderr, "OBSVAR:%s[%u](%s):ERROR:[%s]\n", __FUNCTION__, __LINE__, #term, (message [0] == '\0' ? strerror (errno) : message)); return ret;}
 
-#define YYTRACE printf
+#define YYTRACE Serial.printf
 #define TRACE YYTRACE
 
 #else
@@ -154,7 +154,7 @@ bool DMLayer_ReleaseInstance (DMLayer* pDMLayer);
 /**
  * @brief Prints all Variable name found
  */
-void DMLayer_PrintVariables (DMLayer* pDMLayer);
+size_t DMLayer_PrintVariables (DMLayer* pDMLayer);
 
 /**
  * @brief Observe a variable event

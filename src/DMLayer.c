@@ -208,7 +208,7 @@ static ObsVariable* DMLayer_CreateVariable (DMLayer* pDMLayer, const char* pszVa
     return pVariable;
 }
 
-void DMLayer_PrintVariables (DMLayer* pDMLayer)
+size_t DMLayer_PrintVariables (DMLayer* pDMLayer)
 {
     size_t nCount = 0;
 
@@ -219,19 +219,23 @@ void DMLayer_PrintVariables (DMLayer* pDMLayer)
     {
         ObsVariable* pVariable = pDMLayer->pObsVariables;
 
-        TRACE ("[Listing variables]--------------------------------\n");
+        TRACE ("[Listing variables]--------------------------------\n\r");
 
         while (pVariable != NULL)
         {
-            TRACE ("%4zu\tMEM:[%8zX]\t[%-8X]\t[%s]\t OBS:[%8zX]\n", nCount++, (size_t) pVariable, pVariable->nVariableID, pVariable->pBinData, (size_t) pVariable->pLastObserver);
+            TRACE ("%4zu\tMEM:[%8zX]\t[%-8X]\t[%s]\t OBS:[%8zX]\n\r", nCount, (size_t) pVariable, pVariable->nVariableID, pVariable->pBinData, (size_t) pVariable->pLastObserver);
+            
+            nCount++;
 
             pVariable = pVariable->pPrev;
         }
 
-        TRACE ("--------------------------------------------------\n");
+        TRACE ("--------------------------------------------------\n\r");
     }
     
     VERIFY (DMLayer_SharedUnlock(pDMLayer), "Error unlocking shared lock.", );
+
+    return nCount;
 }
 
 DMLayer* DMLayer_CreateInstance ()

@@ -70,8 +70,6 @@ void Consumer_Callback_Notify (DMLayer* pDMLayer, const char* pszVariable, size_
 
 void Thread_Consumer (void* pValue)
 {
-    DMLayer_AddObserverCallback (pDMLayer, pszProducer, strlen (pszProducer), Consumer_Callback_Notify);
-
     int nRemoteValues[10];
     int nCount = 0;
     size_t nUserType = 0;
@@ -200,7 +198,6 @@ bool DMLayer_LockEnd(DMLayer* pDMLayer)
     return true;
 }
 
-#if 0
 
 void Cpx_SleepTicks (uint32_t nSleepTime)
 {
@@ -215,7 +212,7 @@ uint32_t Cpx_GetCurrentTick (void)
     return (uint32_t)tp.tv_sec * 1000 + tp.tv_usec / 1000;  // get current timestamp in milliseconds
 }
 
-static void StackOverflowHandler ()
+void Cpx_StackOverflowHandler ()
 {
     printf ("Error, Thread#%zu Stack %zu / %zu max\n", Cpx_GetID (), Cpx_GetStackSize (), Cpx_GetMaxStackSize ());
     exit (1);
@@ -228,9 +225,11 @@ int main ()
 
     VERIFY ((pDMLayer = DMLayer_CreateInstance ()) != NULL, "Error creating DMLayer instance", 1);
 
+    assert (DMLayer_AddObserverCallback (pDMLayer, pszProducer, strlen (pszProducer), Consumer_Callback_Notify));
+
     assert (Cpx_Start (20));
 
-    assert (Cpx_SetStackOverflowHandler (StackOverflowHandler));
+
 
     assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 1));
 
@@ -260,4 +259,3 @@ int main ()
     return 0;
 }
 
-#endif

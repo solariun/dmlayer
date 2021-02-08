@@ -7,16 +7,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "B23736A2-903D-419C-92EE-17457A3625EC"
-            shouldBeEnabled = "No"
+            uuid = "2C1C9D9F-0F35-4AEA-83BD-DED1D1C8921B"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../CorePartition/CorePartition.c"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "339"
-            endingLineNumber = "339"
-            landmarkName = "Cpx_Lock(pLock)"
+            startingLineNumber = "491"
+            endingLineNumber = "491"
+            landmarkName = "Cpx_Join()"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
