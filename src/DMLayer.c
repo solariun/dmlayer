@@ -208,32 +208,6 @@ static ObsVariable* DMLayer_CreateVariable (DMLayer* pDMLayer, const char* pszVa
     return pVariable;
 }
 
-size_t DMLayer_PrintVariables (DMLayer* pDMLayer)
-{
-    size_t nCount = 0;
-    
-    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", 0);
-
-    {
-        ObsVariable* pVariable = pDMLayer->pObsVariables;
-
-        TRACE ("[Listing variables]--------------------------------\n\r");
-
-        while (pVariable != NULL)
-        {
-            TRACE ("%4zu\tMEM:[%8zX]\t[%-8X]\t[%s]\t OBS:[%8zX]\n\r", nCount, (size_t) pVariable, pVariable->nVariableID, pVariable->pBinData, (size_t) pVariable->pLastObserver);
-            
-            nCount++;
-
-            pVariable = pVariable->pPrev;
-        }
-
-        TRACE ("--------------------------------------------------\n\r");
-    }
-    
-    return nCount;
-}
-
 DMLayer* DMLayer_CreateInstance ()
 {
     DMLayer* pDMLayer = NULL;
@@ -260,8 +234,6 @@ bool DMLayer_ObserveVariable (DMLayer* pDMLayer, const char* pszVariableName, si
         ObsVariable variable, *pVariable;
         uint16_t nLastEvent;
         
-        TRACE ("[%s]:[%*s]\n", __FUNCTION__, (int) nVariableSize, pszVariableName);
-        
         VERIFY (DMLayer_Lock(pDMLayer, false), "Fail to get exclusive variable lock", false);
         {
             UNLOCK_VERIFY ((pVariable = DMLayer_GetVariable (pDMLayer, pszVariableName, nVariableSize)) != NULL, false, "Variable does not exist.", false);
@@ -272,9 +244,7 @@ bool DMLayer_ObserveVariable (DMLayer* pDMLayer, const char* pszVariableName, si
         nLastEvent = variable.nLastEventPoint;
 
         do
-        {
-            TRACE ("[%s]:[%*s] LastEventPoint: (%u) -> Variable.LastEventPoint: (%u)\n", __FUNCTION__, (int) nVariableSize, pszVariableName, nLastEvent, variable.nLastEventPoint);
-            
+        {            
             if (variable.nLastEventPoint != nLastEvent)
             {
                 if (pnUserType != NULL)
@@ -363,8 +333,6 @@ bool DMLayer_AddObserverCallback (DMLayer* pDMLayer, const char* pszVariableName
             pObservable->pPrev = pVariable->pLastObserver;
 
             pVariable->pLastObserver = pObservable;
-
-            TRACE ("[%s]: (%8zX) Adding observable callback: [%s](%8X) -> fund: [%8zX], pLastObservable: [%8zX]\n", __FUNCTION__, (size_t) pVariable, pszVariableName, pVariable->nVariableID, (size_t) pFunc, (size_t) pVariable->pLastObserver);
         }
         VERIFY (DMLayer_Unlock(pDMLayer, true), "Error unlocking notify lock", false);
         
@@ -542,12 +510,8 @@ static size_t DMLayer_Notify (DMLayer* pDMLayer, ObsVariable* pVariable, const c
 
         pVariable->nLastEventPoint++;
 
-        TRACE ("[%s] Callback for [%*s]-> nLastEventPoint: [%u]\n", __FUNCTION__, (int)nVariableSize, pszVariableName, pVariable->nLastEventPoint);
-
         while (pObservable != NULL)
         {
-            TRACE ("[%s] Callback for [%*s]-> (%8zX)\n", __FUNCTION__, (int)nVariableSize, pszVariableName, (size_t)pObservable->callback);
-
             if (pObservable->bEnable)
             {
                 // Notifying all observables for a giving Variable
@@ -609,13 +573,11 @@ bool DMLayer_SetNumber (DMLayer* pDMLayer, const char* pszVariableName, size_t n
             nNotifyType = pVariable->nType == VAR_TYPE_NONE ? OBS_NOTIFY_CREATED : nNotifyType;
 
             pVariable->nType = VAR_TYPE_NUMBER;
-            pVariable->nValue = (dmlnumber) nValue;
-            
-            NOTRACE ("[%s] [%*s]=(%f)\n", __FUNCTION__, (int) nVariableSize, pszVariableName, pVariable->nValue);
+            pVariable->nValue = (dmlnumber) nValue;            
         }
         VERIFY (DMLayer_Unlock(pDMLayer, false), "Fail to unlock exclusive Lock", false);
 
-        UNLOCK_VERIFY (DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, nNotifyType) > 0, false, "Error notifying observers", false);
+        DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, nNotifyType) > 0;
     }
     
     return true;
@@ -641,8 +603,6 @@ dmlnumber DMLayer_GetNumber (DMLayer* pDMLayer, const char* pszVariableName, siz
     }
     VERIFY(DMLayer_SharedUnlock(pDMLayer, false), "Failt to unlock shared variable lock.", 0);
         
-    NOTRACE ("[%s]:[%*s] variable { Value: [%f], Type: [%u]\n", __FUNCTION__, (int) nVariableSize, pszVariableName, variable.nValue, variable.nType);
-
     VERIFY (variable.nType == VAR_TYPE_NUMBER, "Error, variable is not Number", 0);
     
     if (pnSuccess != NULL) *pnSuccess = true;
@@ -700,7 +660,7 @@ bool DMLayer_SetBinary (DMLayer* pDMLayer, const char* pszVariableName, size_t n
         }
         VERIFY (DMLayer_Unlock(pDMLayer, false), "Fail to unlock exclusive variable lock.", false);
         
-        VERIFY (DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, nNotifyType) == 0, "Error notifying observers", false);
+        DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, nNotifyType);
     }
 
     return true;

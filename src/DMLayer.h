@@ -27,6 +27,7 @@ extern "C"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <Arduino.h>
 
 /**
  * @brief  Definitions
@@ -42,7 +43,7 @@ extern "C"
 #ifdef __DEBUG__
 #define VERIFY(term,message,ret) if (!(term)){fprintf (stderr, "OBSVAR:%s[%u](%s):ERROR:[%s]\n", __FUNCTION__, __LINE__, #term, (message [0] == '\0' ? strerror (errno) : message)); return ret;}
 
-#define YYTRACE printf
+#define YYTRACE serial.printf
 #define TRACE YYTRACE
 
 #else
@@ -160,11 +161,6 @@ bool DMLayer_ReleaseInstance (DMLayer* pDMLayer);
 // * @returns return the pointer of a found variable, on error return NULL.
 // */
 //ObsVariable* DMLayer_GetVariable (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize);
-
-/**
- * @brief Prints all Variable name found
- */
-size_t DMLayer_PrintVariables (DMLayer* pDMLayer);
 
 /**
  * @brief Observe a variable event
