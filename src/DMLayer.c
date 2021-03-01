@@ -577,7 +577,7 @@ bool DMLayer_SetNumber (DMLayer* pDMLayer, const char* pszVariableName, size_t n
         }
         VERIFY (DMLayer_Unlock(pDMLayer, false), "Fail to unlock exclusive Lock", false);
 
-        DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, nNotifyType) > 0;
+        (void) DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, nNotifyType);
     }
     
     return true;
@@ -660,7 +660,7 @@ bool DMLayer_SetBinary (DMLayer* pDMLayer, const char* pszVariableName, size_t n
         }
         VERIFY (DMLayer_Unlock(pDMLayer, false), "Fail to unlock exclusive variable lock.", false);
         
-        DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, nNotifyType);
+        (void) DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, nNotifyType);
     }
 
     return true;
