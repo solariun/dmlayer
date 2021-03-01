@@ -37,7 +37,7 @@ void Thread_Producer (void* pValue)
 {
     int nRand = 0;
 
-    while (true)
+    while (Cpx_Yield ())
     {
         bool nResponse = false;
         
@@ -46,8 +46,6 @@ void Thread_Producer (void* pValue)
         nResponse =  DMLayer_SetNumber (pDMLayer, pszProducer, strlen (pszProducer), Cpx_GetID (), (dmlnumber) nRand);
         
         NOTRACE ("[%s (%zu)]: func: (%u), nRand: [%u]\n", __FUNCTION__, Cpx_GetID(), nResponse, nRand);
-
-        Cpx_Yield ();
     }
 }
 
@@ -73,6 +71,8 @@ void Thread_Consumer (void* pValue)
     int nRemoteValues[10];
     int nCount = 0;
     size_t nUserType = 0;
+
+    assert (DMLayer_AddObserverCallback (pDMLayer, pszProducer, strlen (pszProducer), Consumer_Callback_Notify));
 
     while (DMLayer_ObserveVariable (pDMLayer, pszBinConsumer, strlen (pszBinConsumer), &nUserType) || Cpx_Yield ())
     {
@@ -108,76 +108,90 @@ bool DMLayer_LockInit(DMLayer* pDMLayer)
 {
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
  
-    YYTRACE ("Starting up Lock.. \n");
+    NOTRACE ("Starting up Lock.. \n");
     
+    /*
+     * Initiate Variable lock
+     */
     CpxSmartLock* pLock = malloc (sizeof (pLock));
     
-    Cpx_LockInit(pLock);
+    VERIFY (Cpx_LockInit(pLock), "Error initiating lock.", false);
     
-    DMLayer_SetUserData(pDMLayer, (void*) pLock);
+    DMLayer_SetUserData(pDMLayer, (void*) pLock, false);
+
+    /*
+     * Initiate Notify lock
+     */
+    pLock = malloc (sizeof (pLock));
     
+    VERIFY (Cpx_LockInit(pLock), "Error initiating lock.", false);
+    
+    DMLayer_SetUserData(pDMLayer, (void*) pLock, true);
+
     return true;
 }
 
-bool DMLayer_Lock(DMLayer* pDMLayer)
+bool DMLayer_Lock(DMLayer* pDMLayer, bool bIsNotify)
 {
     CpxSmartLock* pLock = NULL;
     
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
-    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer, bIsNotify)) != NULL, "No Lock defined.", false);
 
-    YYTRACE ("%s: ", __FUNCTION__);
+    NOTRACE ("%s: (Notify: %pX-%u): Pre-Lock: [%u:%zu]\n", __FUNCTION__, pLock, bIsNotify, pLock->bExclusiveLock, pLock->nSharedLockCount);
     
     VERIFY (Cpx_Lock(pLock), "Failed acquire exclusive lock", false);
     
-    YYTRACE (" Lock: [%u]\n", pLock->bExclusiveLock);
+    
+    NOTRACE ("%s: Lock: [%u:%zu]\n", __FUNCTION__, pLock->bExclusiveLock, pLock->nSharedLockCount);
     
     return true;
 }
 
-bool DMLayer_SharedLock(DMLayer* pDMLayer)
+bool DMLayer_SharedLock(DMLayer* pDMLayer, bool bIsNotify)
 {
     CpxSmartLock* pLock = NULL;
     
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
-    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer, bIsNotify)) != NULL, "No Lock defined.", false);
 
-    YYTRACE ("%s: ", __FUNCTION__);
+    NOTRACE ("%s: (Notify: %pX-%u): Pre-Lock: [%u:%zu]\n", __FUNCTION__, pLock, bIsNotify, pLock->bExclusiveLock, pLock->nSharedLockCount);
     
     VERIFY (Cpx_SharedLock(pLock), "Failed acquire shared lock", false);
 
-    YYTRACE (" Lock: [%zu]\n", pLock->nSharedLockCount);
+    NOTRACE (" Lock: [%zu]\n", pLock->nSharedLockCount);
 
     return true;
 }
 
-bool DMLayer_Unlock(DMLayer* pDMLayer)
+bool DMLayer_Unlock(DMLayer* pDMLayer, bool bIsNotify)
 {
     CpxSmartLock* pLock = NULL;
     
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
-    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer, bIsNotify)) != NULL, "No Lock defined.", false);
     
-    YYTRACE ("%s: ", __FUNCTION__);
-    YYTRACE (" Lock: [%u]\n", pLock->bExclusiveLock);
+    NOTRACE ("%s: (Notify: %u)\n", __FUNCTION__, bIsNotify);
 
     VERIFY (Cpx_Unlock(pLock), "Failed unlock", false);
 
+    NOTRACE (" Lock: [%u]\n", pLock->bExclusiveLock);
 
     return true;
 }
 
-bool DMLayer_SharedUnlock(DMLayer* pDMLayer)
+bool DMLayer_SharedUnlock(DMLayer* pDMLayer, bool bIsNotify)
 {
     CpxSmartLock* pLock = NULL;
     
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
-    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer, bIsNotify)) != NULL, "No Lock defined.", false);
     
-    YYTRACE ("%s: ", __FUNCTION__);
-    YYTRACE (" Lock: [%zu]\n", pLock->nSharedLockCount);
+    NOTRACE ("%s: (Notify: %u)\n", __FUNCTION__, bIsNotify);
     
     VERIFY (Cpx_SharedUnlock(pLock), "Failed to unlock", false);
+
+    NOTRACE (" Lock: [%zu]\n", pLock->nSharedLockCount);
 
     return true;
 }
@@ -185,15 +199,24 @@ bool DMLayer_SharedUnlock(DMLayer* pDMLayer)
 bool DMLayer_LockEnd(DMLayer* pDMLayer)
 {
     CpxSmartLock* pLock = NULL;
-    
-    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
-    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer)) != NULL, "No Lock defined.", false);
 
-    VERIFY (Cpx_Lock(pLock), "Failed acquire exclusive lock", false);
-    
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+
+    /*
+     * Releaseing Varaible lock
+     */
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer, false)) != NULL, "No variable Lock defined.", false);
+    Cpx_Unlock(pLock);
     free (pLock);
+    DMLayer_SetUserData(pDMLayer, NULL, false);
     
-    DMLayer_SetUserData(pDMLayer, NULL);
+    /*
+     * Releaseing Notify lock
+     */
+    VERIFY ((pLock = (CpxSmartLock*) DMLayer_GetUserData(pDMLayer, true)) != NULL, "No notification Lock defined.", false);
+    Cpx_Unlock(pLock);
+    free (pLock);
+    DMLayer_SetUserData(pDMLayer, NULL, true);
     
     return true;
 }
@@ -225,31 +248,29 @@ int main ()
 
     VERIFY ((pDMLayer = DMLayer_CreateInstance ()) != NULL, "Error creating DMLayer instance", 1);
 
-    assert (DMLayer_AddObserverCallback (pDMLayer, pszProducer, strlen (pszProducer), Consumer_Callback_Notify));
-
     assert (Cpx_Start (20));
 
 
 
-    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 1));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 1024, 1));
 
-    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 300));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 1024, 300));
 
-    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 300));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 1024, 300));
 
-    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 500));
-    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 500));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 1024, 500));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 1024, 500));
 
-    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 50));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 1024, 50));
 
-    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 800));
-    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 800));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 1024, 800));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 1024, 800));
 
-    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 1000));
+    assert (Cpx_CreateThread (Thread_Producer, NULL, 1024, 1000));
 
-    assert (Cpx_CreateThread (Thread_Producer, NULL, 600, 60000));
+    //assert (Cpx_CreateThread (Thread_Producer, NULL, 1024, 60000));
 
-    assert (Cpx_CreateThread (Thread_Consumer, NULL, 600, 1000));
+    assert (Cpx_CreateThread (Thread_Consumer, NULL, 1024, 1000));
     
     
     Cpx_Join ();

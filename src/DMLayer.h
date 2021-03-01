@@ -42,7 +42,7 @@ extern "C"
 #ifdef __DEBUG__
 #define VERIFY(term,message,ret) if (!(term)){fprintf (stderr, "OBSVAR:%s[%u](%s):ERROR:[%s]\n", __FUNCTION__, __LINE__, #term, (message [0] == '\0' ? strerror (errno) : message)); return ret;}
 
-#define YYTRACE Serial.printf
+#define YYTRACE printf
 #define TRACE YYTRACE
 
 #else
@@ -82,6 +82,16 @@ typedef struct Observable Observable;
 
 typedef struct ObsVariable ObsVariable;
 
+/*
+ * User defines lock for Notify and Variable
+ */
+typedef struct
+{
+    void* pNotifyLock;
+    void* pVariableLock;
+    void* pUserData;
+} ObVUserData;
+
 /**
  * @brief typedefs public strctures
 */
@@ -89,7 +99,7 @@ typedef struct ObsVariable ObsVariable;
 typedef struct
 {
     bool enable;
-    void* pUserData;
+    ObVUserData pUserData;
     ObsVariable* pObsVariables;
 } DMLayer;
 
@@ -108,10 +118,10 @@ typedef void (*obs_callback_func)(DMLayer*, const char*, size_t, size_t, uint8_t
 extern void DMLayer_YieldContext(void);
 
 extern bool DMLayer_LockInit(DMLayer* pDMLayer);
-extern bool DMLayer_Lock(DMLayer* pDMLayer);
-extern bool DMLayer_SharedLock(DMLayer* pDMLayer);
-extern bool DMLayer_Unlock(DMLayer* pDMLayer);
-extern bool DMLayer_SharedUnlock(DMLayer* pDMLayer);
+extern bool DMLayer_Lock(DMLayer* pDMLayer, bool bIsNotify);
+extern bool DMLayer_SharedLock(DMLayer* pDMLayer, bool bIsNotify);
+extern bool DMLayer_Unlock(DMLayer* pDMLayer, bool bIsNotify);
+extern bool DMLayer_SharedUnlock(DMLayer* pDMLayer, bool bIsNotify);
 extern bool DMLayer_LockEnd(DMLayer* pDMLayer);
 /**
  * @brief Create API instance
@@ -310,9 +320,9 @@ dmlnumber DMLayer_GetNumber (DMLayer* pDMLayer, const char* pszVariableName, siz
  */
 bool DMLayer_SetNumber (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize, size_t nUserType, dmlnumber nValue);
 
-bool DMLayer_SetUserData (DMLayer* pDMLayer, void* pUserData);
+bool DMLayer_SetUserData (DMLayer* pDMLayer, void* pUserData, bool bIsNotify);
 
-void* DMLayer_GetUserData (DMLayer* pDMLayer);
+void* DMLayer_GetUserData (DMLayer* pDMLayer, bool bIsNotify);
 
 #ifdef __cplusplus
 }
