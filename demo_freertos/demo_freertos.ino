@@ -1,7 +1,7 @@
 //#define configCHECK_FOR_STACK_OVERFLOW 1 
 
 #include <Arduino.h>
-#include <STM32FreeRTOS.h>
+#include <FreeRTOS.h>
 #include <assert.h>
 
 #include "read_write_lock.hpp"
@@ -127,43 +127,57 @@ bool DMLayer_LockInit (DMLayer* pDMLayer)
 {
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
 
+    // Create variable lock
     ReadWriteLock_t* wrlock = CreateReadWriteLockPreferWriter ();
+    VERIFY (wrlock != NULL, "Error creating variable lock", false);
+    DMLayer_SetUserData (pDMLayer, (void*)wrlock, false);
 
-    DMLayer_SetUserData (pDMLayer, (void*)wrlock);
-
-    return true;
-}
-
-bool DMLayer_Lock (DMLayer* pDMLayer)
-{
-    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
-
-    ::WriterLock (wrlock);
+    // Creating notify lock
+    wrlock = CreateReadWriteLockPreferWriter ();
+    VERIFY (wrlock != NULL, "Error creating notify lock", false);
+    DMLayer_SetUserData (pDMLayer, (void*)wrlock, true);
 
     return true;
 }
 
-bool DMLayer_SharedLock (DMLayer* pDMLayer)
+bool DMLayer_Lock (DMLayer* pDMLayer, bool bIsNotify)
 {
-    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
+    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer, bIsNotify);
+    
+    VERIFY (wrlock != NULL, "Error source lock data", false);
 
+    WriterLock (wrlock);
+
+    return true;
+}
+
+bool DMLayer_SharedLock (DMLayer* pDMLayer, bool bIsNotify)
+{
+    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer, bIsNotify);
+
+    VERIFY (wrlock != NULL, "Error source lock data", false);
+    
     ReaderLock ((ReadWriteLock_t*) wrlock);
 
     return true;
 }
 
-bool DMLayer_Unlock (DMLayer* pDMLayer)
+bool DMLayer_Unlock (DMLayer* pDMLayer, bool bIsNotify)
 {
-    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
+    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer, bIsNotify);
 
-    ::WriterUnlock (wrlock);
+    VERIFY (wrlock != NULL, "Error source lock data", false);
+
+    WriterUnlock (wrlock);
 
     return true;
 }
 
-bool DMLayer_SharedUnlock (DMLayer* pDMLayer)
+bool DMLayer_SharedUnlock (DMLayer* pDMLayer, bool bIsNotify)
 {
-    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
+    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer, bIsNotify);
+
+    VERIFY (wrlock != NULL, "Error source lock data", false);
 
     ReaderUnlock ((ReadWriteLock_t*) wrlock);
 
@@ -172,10 +186,14 @@ bool DMLayer_SharedUnlock (DMLayer* pDMLayer)
 
 bool DMLayer_LockEnd (DMLayer* pDMLayer)
 {
-    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer);
+    ReadWriteLock_t* wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer, false);
+    VERIFY (wrlock != NULL, "Error sourcing variable lock data", false);
+    FreeReadWriteLock (wrlock);
 
-    ::FreeReadWriteLock (wrlock);
-
+    wrlock = (ReadWriteLock_t*)DMLayer_GetUserData (pDMLayer, true);
+    VERIFY (wrlock != NULL, "Error sourcing variable lock data", false);
+    FreeReadWriteLock (wrlock);
+    
     return true;
 }
 
@@ -210,21 +228,23 @@ void setup ()
 
     assert (DMLayer_AddObserverCallback (pDMLayer, pszProducer, strlen (pszProducer), Consumer_Callback_Notify));
 
-    xTaskCreate(Thread_Producer,"Producer1", configMINIMAL_STACK_SIZE * 2, (void*) 1, tskIDLE_PRIORITY + 2, NULL);
+    xTaskCreate(Thread_Producer,"Producer1", configMINIMAL_STACK_SIZE * 1.5, (void*) 1, tskIDLE_PRIORITY + 2, NULL);
 
-    delay (100);
+    xTaskCreate(Thread_Producer,"Producer2", configMINIMAL_STACK_SIZE * 1.5, (void*) 250, tskIDLE_PRIORITY + 3, NULL);
 
-    xTaskCreate(Thread_Producer,"Producer2", configMINIMAL_STACK_SIZE * 2, (void*) 250, tskIDLE_PRIORITY + 3, NULL);
+    xTaskCreate(Thread_Producer,"Producer2", configMINIMAL_STACK_SIZE * 1.5, (void*) 100, tskIDLE_PRIORITY + 3, NULL);
 
-    delay (100);
+    xTaskCreate(Thread_Producer,"Producer2", configMINIMAL_STACK_SIZE * 1.5, (void*) 500, tskIDLE_PRIORITY + 3, NULL);
 
-    xTaskCreate (Thread_Consumer, "Consumer1", configMINIMAL_STACK_SIZE * 4, NULL, tskIDLE_PRIORITY + 10, NULL);
-
-    vTaskStartScheduler ();
+    xTaskCreate (Thread_Consumer, "Consumer1", configMINIMAL_STACK_SIZE * 2, NULL, tskIDLE_PRIORITY + 10, NULL);
 
     Serial.println ("Finished....");
 }
 
 void loop ()
 {
+    // delay (100);
+    // vTaskStartScheduler ();
+
+    vTaskDelay (pdMS_TO_TICKS (1000));   
 }
