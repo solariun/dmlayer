@@ -191,7 +191,7 @@ static ObsVariable* DMLayer_CreateVariable (DMLayer* pDMLayer, const char* pszVa
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", NULL);
     VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", NULL);
     VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", NULL);
-    VERIFY ((pVariable = malloc (sizeof (ObsVariable))) != NULL, "", NULL);
+    VERIFY ((pVariable = (ObsVariable*) malloc (sizeof (ObsVariable))) != NULL, "", NULL);
 
     VERIFY (DMLayer_GetVariable (pDMLayer, pszVariableName, nVariableSize) == NULL, "Variable already exist, and will not be added", NULL);
 
@@ -212,13 +212,13 @@ DMLayer* DMLayer_CreateInstance ()
 {
     DMLayer* pDMLayer = NULL;
 
-    VERIFY ((pDMLayer = malloc (sizeof (DMLayer))) != NULL, "", NULL);
+    VERIFY ((pDMLayer = (DMLayer*) malloc (sizeof (DMLayer))) != NULL, "", NULL);
 
     pDMLayer->enable = true;
     pDMLayer->pObsVariables = NULL;
 
     VERIFY (DMLayer_LockInit(pDMLayer), "Error initiating lock.", NULL);
-    
+
     return pDMLayer;
 }
 
@@ -233,18 +233,18 @@ bool DMLayer_ObserveVariable (DMLayer* pDMLayer, const char* pszVariableName, si
     {
         ObsVariable variable, *pVariable;
         uint16_t nLastEvent;
-        
+
         VERIFY (DMLayer_Lock(pDMLayer, false), "Fail to get exclusive variable lock", false);
         {
             UNLOCK_VERIFY ((pVariable = DMLayer_GetVariable (pDMLayer, pszVariableName, nVariableSize)) != NULL, false, "Variable does not exist.", false);
             variable = *pVariable;
         }
         VERIFY (DMLayer_Unlock(pDMLayer, false), "Fail to unlock exclusive variable lock", false);
-        
+
         nLastEvent = variable.nLastEventPoint;
 
         do
-        {            
+        {
             if (variable.nLastEventPoint != nLastEvent)
             {
                 if (pnUserType != NULL)
@@ -264,7 +264,7 @@ bool DMLayer_ObserveVariable (DMLayer* pDMLayer, const char* pszVariableName, si
                 variable = *pVariable;
             }
             VERIFY (DMLayer_Unlock(pDMLayer, false), "Fail to unlock exclusive variable lock", false);
-            
+
         } while (pVariable != NULL);
     }
 
@@ -273,10 +273,10 @@ bool DMLayer_ObserveVariable (DMLayer* pDMLayer, const char* pszVariableName, si
 
 static Observable* DMLayer_GetObserverCallback (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize, obs_callback_func pFunc)
 {
-    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", NULL);
     VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", NULL);
-    VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", false);
-    VERIFY (NULL != pFunc, "Function variable is null", false);
+    VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", NULL);
+    VERIFY (NULL != pFunc, "Function variable is null", NULL);
 
     {
         ObsVariable* pVariable = NULL;
@@ -318,15 +318,15 @@ bool DMLayer_AddObserverCallback (DMLayer* pDMLayer, const char* pszVariableName
                 UNLOCK_VERIFY (pVariable = DMLayer_CreateVariable (pDMLayer, pszVariableName, nVariableSize), false, "Error creating Variable.", false);
             }
             VERIFY (DMLayer_Unlock (pDMLayer, false), "Fail to unlock variable lock.", false);
-            
+
             pVariable->nType = VAR_TYPE_NONE;
         }
-        
+
         VERIFY (DMLayer_Lock(pDMLayer, true), "Failed to get exclusive notify lock", false);
         {
             UNLOCK_VERIFY (DMLayer_GetObserverCallback(pDMLayer, pszVariableName, nVariableSize, pFunc) == NULL, true, "Error, Variable already exist", false);
-            
-            UNLOCK_VERIFY ((pObservable = malloc (sizeof (Observable))) != NULL, true, "", false);
+
+            UNLOCK_VERIFY ((pObservable = (Observable*) malloc (sizeof (Observable))) != NULL, true, "", false);
 
             pObservable->callback = pFunc;
             pObservable->bEnable = true;
@@ -335,7 +335,7 @@ bool DMLayer_AddObserverCallback (DMLayer* pDMLayer, const char* pszVariableName
             pVariable->pLastObserver = pObservable;
         }
         VERIFY (DMLayer_Unlock(pDMLayer, true), "Error unlocking notify lock", false);
-        
+
         nReturn = true;
     }
 
@@ -345,46 +345,46 @@ bool DMLayer_AddObserverCallback (DMLayer* pDMLayer, const char* pszVariableName
 bool DMLayer_SetObservableCallback (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize, obs_callback_func pFunc, bool bEnable)
 {
     bool bReturn = false;
-    
+
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
     VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", NULL);
     VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", false);
     VERIFY (NULL != pFunc, "Function variable is null", false);
-    
+
     VERIFY(DMLayer_SharedLock(pDMLayer, true), "Fail to get shared notification lock", false);
     {
         Observable* pObservable = NULL;
-        
+
         SUNLOCK_VERIFY ((pObservable = DMLayer_GetObserverCallback(pDMLayer, pszVariableName, nVariableSize, pFunc)) != NULL, true, "Error, Variable does not exist", false);
-        
+
         pObservable->bEnable = bEnable;
-        
+
         bReturn = true;
     }
     VERIFY(DMLayer_SharedUnlock(pDMLayer, true), "Fail to unlock shared notification lock", false);
-    
+
     return bReturn;
 }
 
 bool DMLayer_IsObservableCallbackEnable (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize, obs_callback_func pFunc, bool* pbSuccess)
 {
     bool bReturn = false;
-    
+
     if (pbSuccess != NULL) *pbSuccess = false;
-    
+
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
     VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", NULL);
     VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", false);
     VERIFY (NULL != pFunc, "Function variable is null", false);
-    
+
     VERIFY(DMLayer_SharedLock(pDMLayer, true), "Fail to get shared notification lock", false);
     {
         Observable* pObservable = NULL;
-        
+
         SUNLOCK_VERIFY ((pObservable = DMLayer_GetObserverCallback(pDMLayer, pszVariableName, nVariableSize, pFunc)) != NULL, true,  "Error, Variable does not exist", false);
-        
+
         bReturn = pObservable->bEnable;
-        
+
         if (pbSuccess != NULL) *pbSuccess = true;
     }
     VERIFY(DMLayer_SharedUnlock(pDMLayer, true), "Fail to unlock shared notification lock", false);
@@ -401,7 +401,7 @@ bool DMLayer_RemoveObserverCallback (DMLayer* pDMLayer, const char* pszVariableN
     VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", false);
     VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", false);
     VERIFY (NULL != pFunc, "Function variable is null", false);
-    
+
     VERIFY (DMLayer_Lock(pDMLayer, true), "Failed to get exclusive notify lock", false);
     {
         ObsVariable* pVariable = NULL;
@@ -449,7 +449,7 @@ bool DMLayer_CleanUpVariables (DMLayer* pDMLayer)
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
 
     VERIFY (DMLayer_Lock(pDMLayer, false), "Fail to get exclusive variable lock.", false);
-    
+
     // Disable all interactions
     pDMLayer->enable = false;
 
@@ -472,7 +472,7 @@ bool DMLayer_CleanUpVariables (DMLayer* pDMLayer)
             pVariable = pVariable->pPrev;
             free (pTemp);
         }
-        
+
         VERIFY (DMLayer_Unlock(pDMLayer, false), "Failt to unlock exclusive varialble lock.", false);
         nReturn = true;
     }
@@ -545,7 +545,7 @@ size_t DMLayer_NotifyOnly (DMLayer* pDMLayer, const char* pszVariableName, size_
             nReturn = DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, OBS_NOTIFY_NOTIFY);
         }
     }
-    
+
     return nReturn;
 }
 
@@ -569,17 +569,17 @@ bool DMLayer_SetNumber (DMLayer* pDMLayer, const char* pszVariableName, size_t n
             {
                 UNLOCK_VERIFY (DMLayer_ResetVariable (pVariable, true, false), false, "Error reseting variable", false);
             }
-            
+
             nNotifyType = pVariable->nType == VAR_TYPE_NONE ? OBS_NOTIFY_CREATED : nNotifyType;
 
             pVariable->nType = VAR_TYPE_NUMBER;
-            pVariable->nValue = (dmlnumber) nValue;            
+            pVariable->nValue = (dmlnumber) nValue;
         }
         VERIFY (DMLayer_Unlock(pDMLayer, false), "Fail to unlock exclusive Lock", false);
 
         (void) DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, nNotifyType);
     }
-    
+
     return true;
 }
 
@@ -589,22 +589,22 @@ dmlnumber DMLayer_GetNumber (DMLayer* pDMLayer, const char* pszVariableName, siz
     ObsVariable variable;
 
     if (pnSuccess != NULL) *pnSuccess = false;
-    
+
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", 0);
     VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", 0);
     VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", 0);
-    
+
     VERIFY(DMLayer_SharedLock(pDMLayer, false), "Failt to get shared variable lock.", 0);
     {
         ObsVariable *pVariable = NULL;
-        
+
         UNLOCK_VERIFY((pVariable = DMLayer_GetVariable (pDMLayer, pszVariableName, nVariableSize)) != NULL && pVariable->nType == VAR_TYPE_NUMBER, false, "Error, variable does not exist", 0);
         variable = *pVariable;
     }
     VERIFY(DMLayer_SharedUnlock(pDMLayer, false), "Failt to unlock shared variable lock.", 0);
-        
+
     VERIFY (variable.nType == VAR_TYPE_NUMBER, "Error, variable is not Number", 0);
-    
+
     if (pnSuccess != NULL) *pnSuccess = true;
 
     dmlValue = variable.nValue;
@@ -619,7 +619,7 @@ bool DMLayer_SetBinary (DMLayer* pDMLayer, const char* pszVariableName, size_t n
     VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", false);
     VERIFY (NULL != pBinData && nBinSize > 0, "Bin data inconsistent.", false);
 
-    
+
     {
         ObsVariable* pVariable = NULL;
         uint8_t nNotifyType = OBS_NOTIFY_CHANGED;
@@ -634,20 +634,20 @@ bool DMLayer_SetBinary (DMLayer* pDMLayer, const char* pszVariableName, size_t n
             {
                 VERIFY (DMLayer_ResetVariable (pVariable, true, false), "Error reseting variable", false);
             }
-            
+
             pVariable->nType = VAR_TYPE_BINARY;
 
             if (pVariable->pBinData != NULL)
             {
                 if (pVariable->nBinAllocSize < nBinSize)
                 {
-                    UNLOCK_VERIFY ((pVariable->pBinData = realloc (pVariable->pBinData, nBinSize)) == NULL, false, "", false);
+                    UNLOCK_VERIFY ((pVariable->pBinData = (char*) realloc (pVariable->pBinData, nBinSize)) == NULL, false, "", false);
                     pVariable->nBinAllocSize = nBinSize;
                 }
             }
             else
             {
-                if ((pVariable->pBinData = malloc (nBinSize)) == NULL)
+                if ((pVariable->pBinData = (char*) malloc (nBinSize)) == NULL)
                 {
                     UNLOCK_VERIFY (DMLayer_ResetVariable (pVariable, true, false), false, "Error reseting variable", false);
                 }
@@ -659,7 +659,7 @@ bool DMLayer_SetBinary (DMLayer* pDMLayer, const char* pszVariableName, size_t n
             memcpy ((void*)pVariable->pBinData, (void*)pBinData, nBinSize);
         }
         VERIFY (DMLayer_Unlock(pDMLayer, false), "Fail to unlock exclusive variable lock.", false);
-        
+
         (void) DMLayer_Notify (pDMLayer, pVariable, pszVariableName, nVariableSize, nUserType, nNotifyType);
     }
 
@@ -669,7 +669,7 @@ bool DMLayer_SetBinary (DMLayer* pDMLayer, const char* pszVariableName, size_t n
 uint8_t DMLayer_GetVariableType (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize)
 {
     ObsVariable variable;
-    
+
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", VAR_TYPE_ERROR);
     VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", VAR_TYPE_ERROR);
     VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", VAR_TYPE_ERROR);
@@ -688,7 +688,7 @@ uint8_t DMLayer_GetVariableType (DMLayer* pDMLayer, const char* pszVariableName,
 size_t DMLayer_GetVariableBinarySize (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize)
 {
     ObsVariable variable;
-    
+
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", 0);
     VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", 0);
     VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", 0);
@@ -707,7 +707,7 @@ size_t DMLayer_GetVariableBinarySize (DMLayer* pDMLayer, const char* pszVariable
 size_t DMLayer_GetUserType (DMLayer* pDMLayer, const char* pszVariableName, size_t nVariableSize)
 {
     ObsVariable variable;
-    
+
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", 0);
     VERIFY (false != pDMLayer->enable, "Error, DMLayer is disabled.", 0);
     VERIFY (NULL != pszVariableName && 0 != nVariableSize, "Variable is null or empty.", 0);
@@ -749,18 +749,18 @@ bool DMLayer_GetBinary (DMLayer* pDMLayer, const char* pszVariableName, size_t n
 bool DMLayer_SetUserData (DMLayer* pDMLayer, void* pUserData, bool bIsNotify)
 {
     VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
-    
+
     if (bIsNotify)
         pDMLayer->pUserData.pNotifyLock = pUserData;
     else
         pDMLayer->pUserData.pVariableLock = pUserData;
-    
+
     return true;
 }
 
 void* DMLayer_GetUserData (DMLayer* pDMLayer, bool bIsNotify)
 {
-    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", false);
-    
+    VERIFY (NULL != pDMLayer, "Error, DMLayer is invalid.", NULL);
+
     return bIsNotify ? pDMLayer->pUserData.pNotifyLock : pDMLayer->pUserData.pVariableLock;
 }
