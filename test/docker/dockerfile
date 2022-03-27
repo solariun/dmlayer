@@ -1,0 +1,6 @@
+FROM gcc:11.2
+
+RUN apt-get -y update && apt-get -y install cpputest lcov
+
+WORKDIR /dmlayer/test
+CMD make clean unit_test run cov
